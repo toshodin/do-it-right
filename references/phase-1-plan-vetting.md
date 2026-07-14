@@ -51,7 +51,10 @@ on merge to main, etc.). Captured here so **step 13** has a concrete thing to ru
 Verifiable, not vague: "returns 403 for non-owners", not "handles permissions".
 
 ## Security & privacy
-What data is touched, what could leak, which access rules apply.
+What data is touched, what could leak, which access rules apply. Ground this in any
+static-analysis or attack-surface inventory you have for the repo (SAST output, an
+endpoint/route map, prior security findings) so the threat model starts from the
+real surface, not guesswork.
 
 ## Out of scope
 What you are deliberately **not** doing. The line that stops scope creep.

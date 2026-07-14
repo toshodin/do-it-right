@@ -67,6 +67,11 @@ actions get skipped under time pressure. So make them literal, every single time
  user-facing change as done, complete, or ready to try until gates 2 and 3 have
  actually been executed and their result stated.
 
+Across all three, **show the evidence, don't assert it.** Every claim that a gate is
+met - suite green, deployed, flow watched - is backed by the actual output you paste
+or the concrete result you state. A bare "it passes" or "it's done" with no evidence
+shown counts as NOT done. The gate owns "verified", and the author's say-so never does.
+
 ## What "subagent or external-API review" means
 
 The reviewer must **not be the context that wrote the work** - self-review by the

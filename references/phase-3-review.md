@@ -41,6 +41,14 @@ context, or an external-API review by a *different model* than the one that wrot
 the code. The author's own context can't reliably see its own blind spots, which
 is the whole reason this step exists.
 
+**On model diversity.** The primary review is strongest on a capable model
+*different* from the one that wrote the code. The adversarial refuters (the finding
+gate, below) can run on a cheaper or local model - they only need to try to find a
+guard, and their refutations are cite-checked, so a weak refuter cannot do harm. A
+same-model subagent in a clean context is fine for context-heavy review, but that is
+independent context, not an independent model. The author model never reviews its
+own code.
+
 Always hand over the diff **and the `implementation-notes.md`** - the "Deviations"
 and "Open questions" sections are where review effort pays off most.
 
@@ -128,6 +136,60 @@ persona returns confidence-rated, file-and-line-specific findings.
 > **Plan-vetting tie-in (Phase 1):** if you keep a team knowledge store, do the same
 > pull *before* writing code - surface the touched area's gotchas and contracts so
 > the plan doesn't design something that violates a known contract in the first place.
+
+### The finding gate: provenance, refutation, no false positives
+
+A review is only trusted if it does not cry wolf. A plausible-but-wrong finding
+burns trust and time (the false positive that helped create this loop), and a
+hallucinated citation is worse than saying nothing. So **every medium-or-higher
+finding, from every lens** - security, correctness, privacy, performance, the lot -
+must clear this gate before it is reported. The security lens leans on it hardest.
+
+**Map the attack surface first (security and reachability findings).** If you have
+static-analysis output, a SAST report, or an attack-surface inventory for the repo,
+start from it. Otherwise list it by hand: entry points (routes, handlers, message
+consumers), dangerous sinks (eval/exec/subprocess, raw SQL, deserialisation,
+outbound HTTP), trust boundaries, and where attacker-controlled input flows. Spend
+the review budget on that surface, not on boilerplate. Other lenses (privacy,
+performance, accessibility, data integrity) start straight at item 1 below.
+
+1. **Anchor it, or it does not exist.** Each finding cites a concrete anchor: exact
+   file and line plus the verbatim source snippet it depends on, or a failing test
+   that exercises it. Re-open the file and confirm that snippet is actually there, at
+   or within a few lines of the cited spot. If the cited code is not there it is a
+   hallucination - drop it. Prose describing a vulnerability is not evidence of one.
+2. **The reviewer owns "confirmed", not the author.** The context that raised a
+   finding cannot mark it verified. Confirmation is earned only by clearing these
+   checks. A self-stamped "verified" means nothing.
+3. **Try to kill it before you believe it (adversarial refutation).** For each
+   finding, run an independent pass - a different model or context - whose only job is
+   to find the guard, check, or precondition that makes the finding a non-issue: an
+   upstream bound, an auth or ownership check, an unreachable sink, a validation the
+   first pass missed. The refuter tries hard to prove the finding is safe, but it only
+   flips to refuted if that attempt produces a **real, quoted guard that exists in the
+   source** - quote it and confirm it is real, not paraphrased or imagined. If the
+   refuter cannot point to one, the finding survives unchanged. This asymmetry is
+   deliberate: an unverifiable refutation must never win, because a hallucinated guard
+   that buries a real vulnerability is the most expensive error there is.
+4. **Severity must match reachability.** "Critical" only stands if the stated path
+   supports it: attacker-controlled input actually reaches the sink, network-reachable
+   if you claim it, no dominating guard in between. If reachability rests on a
+   non-default config or an unproven precondition, downgrade and say why. Map severity
+   onto your gate tiers: a Critical or High finding is a **Blocker** for the Step 9
+   loop. Medium is the unjustified-**Major** bar Step 10 makes you clear.
+5. **A guard that blocks the bug is itself a finding.** When refutation kills a
+   candidate because a check makes it safe, record that guard as an observation. It is
+   durable knowledge and it stops the same false alarm returning next time.
+6. **Definite vs inferred, and say NONE loudly.** State what the code definitely does
+   versus what you infer. Enumerate every bounds, validation, and access check on the
+   path, and when there is none, say NONE prominently - the absence is the finding.
+7. **Never echo a secret.** When a finding touches a credential or secret, report that
+   the exposure exists and where, never the value - not in the finding, the commit, or
+   any notes or knowledge store.
+8. **Feed misses back.** When a false positive or a real miss slips through anyway,
+   add a deterministic regression guard or a rule to your review rule set (see "Build
+   your own review rule set" in the README) so that class cannot silently recur. The
+   gate gets stronger every time it fails.
 
 ## Step 10 - Fix every medium+ finding, add a regression test for each, loop
 
