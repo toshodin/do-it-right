@@ -46,7 +46,7 @@ phase gets skipped and every decision is recorded.
 Copy the folder into your Claude Code skills directory:
 
 ```bash
-git clone https://github.com/<your-username>/do-it-right.git ~/.claude/skills/do-it-right
+git clone https://github.com/toshodin/do-it-right.git ~/.claude/skills/do-it-right
 ```
 
 It triggers automatically on build / implement / fix / "make it faster" work, or
